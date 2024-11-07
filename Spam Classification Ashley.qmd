@@ -1,0 +1,59 @@
+---
+title: "Spam Classification Ashley"
+format: html
+editor: visual
+---
+
+## Libraries
+
+```{r, message = FALSE}
+library(bayesrules)
+library(tidyverse)
+library(e1071)
+library(janitor)
+library(shiny)
+library(bslib)
+library(here)
+```
+
+## Data 
+
+```{r}
+data <- read.table(file= here("~/Desktop/Bayesian Stats/DS400/Final/SMSSpamCollection"), sep="\t", quote="", comment.char="")
+```
+
+## Cleaning 
+
+```{r}
+head(data)
+```
+
+```{r}
+colnames(data)
+```
+
+```{r}
+colnames(data) <- c("type", "message")
+colnames(data)
+```
+
+```{r}
+head(data)
+```
+
+## Exploration
+
+```{r}
+ggplot(data = data, aes(x = type, fill = type)) + 
+  geom_bar()
+```
+
+```{r}
+
+```
+
+## Bayes 
+
+```{r}
+
+```
