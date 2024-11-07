@@ -16,13 +16,13 @@ library(bslib)
 library(here)
 ```
 
-## Data 
+## Data
 
 ```{r}
 data <- read.table(file= here("~/Desktop/Bayesian Stats/DS400/Final/SMSSpamCollection"), sep="\t", quote="", comment.char="")
 ```
 
-## Cleaning 
+## Cleaning
 
 ```{r}
 head(data)
@@ -52,7 +52,7 @@ ggplot(data = data, aes(x = type, fill = type)) +
 
 ```
 
-## Bayes 
+## Bayes
 
 ```{r}
 
