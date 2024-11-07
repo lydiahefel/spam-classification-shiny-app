@@ -15,7 +15,7 @@ library(here)
 ## Data
 
 ```{r}
-data <- read.table(file= here("data/sms+spam+collection/SMSSpamCollection"), sep="\t", quote="", comment.char="")
+spam_data <- read.table(file= here("data/sms+spam+collection/SMSSpamCollection"), sep="\t", quote="", comment.char="")
 ```
 
 ## Shiny App Example
