@@ -21,7 +21,7 @@ library(wordcloud)
 ## Data
 
 ```{r}
-data <- read.table(file= here("~/Desktop/Bayesian Stats/DS400/Final/SMSSpamCollection"), sep="\t", quote="", comment.char="")
+data <- read.table(file= here("~/Desktop/Bayesian Stats/spam-classification-shiny-app/SMSSpamCollection"), sep="\t", quote="", comment.char="")
 ```
 
 ## Cleaning
@@ -100,6 +100,29 @@ spam_corpus <- tm_map(spam_corpus, stripWhitespace)
 
 # Create word cloud for 'spam' messages with standard Reds palette
 wordcloud(spam_corpus, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Reds"), main = "Spam Messages")
+```
+
+```{r}
+# Add a new column 'word_count' to 'data' with the word count of each message
+data$word_count <- sapply(strsplit(data$message, "\\s+"), length)
+```
+
+```{r}
+ggplot(data, aes(x = type, y = word_count, color = has_exclamation)) + 
+  geom_point()
+```
+
+It can be seen in this graph that spam messages are always less than 50 words in this data set. Also, a larger portion of spam has an exclamation point while the ham messages rarely do.
+
+```{r}
+# Count the number of spam messages with word_count less than 50
+spam_count_greater_than_50 <- sum(data$type == "spam" & data$word_count > 50)
+spam_count_greater_than_50
+```
+
+```{r}
+# Next, run positive vs negative sentiment analysis
+
 ```
 
 ## Bayes
