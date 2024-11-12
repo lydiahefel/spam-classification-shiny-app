@@ -86,9 +86,7 @@ shinyApp(ui = ui, server = server)
 
 ```
 
-#### Word Count 
-
-spam vs ham
+#### Word Counts
 
 ```{r, message = FALSE}
 words <- spam_data %>%
