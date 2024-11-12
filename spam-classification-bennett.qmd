@@ -1,0 +1,79 @@
+---
+title: "finalExploration"
+format: html
+editor: visual
+---
+
+## loading in
+
+```{r}
+# Load libraries
+library(shiny)
+library(caret)
+library(dplyr)
+library(stringr)
+library(e1071)
+library(ggplot2)
+
+
+df <- read.table("SMSSpamCollection.txt", 
+                 sep = "\t",  # tab separation
+                 header = FALSE, 
+                 col.names = c("label", "text"), 
+                 fill = TRUE, 
+                 strip.white = TRUE)
+
+
+```
+
+```{r}
+set.seed(123)
+trainIndex <- createDataPartition(df$label, p = 0.8, list = FALSE)
+trainData <- data[trainIndex, ]
+testData <- data[-trainIndex, ]
+
+model <- naiveBayes(label ~ text, data = trainData)
+```
+
+```{r}
+# Define UI
+ui <- fluidPage(
+  # Application title
+  titlePanel("Spam Classification Model"),
+  
+  # Sidebar layout
+  sidebarLayout(
+    sidebarPanel(
+      # Text input
+      textInput("text", "Enter SMS text:"),
+      
+      # Action button
+      actionButton("classify", "Classify")
+    ),
+    
+    # Main panel
+    mainPanel(
+      # Output
+      textOutput("prediction")
+    )
+  )
+)
+
+
+#server
+server <- function(input, output) {
+  observeEvent(input$classify, {
+    # Predict
+    new_data <- data.frame(text = input$text)
+    prediction <- predict(model, new_data)
+    
+    # Output
+    output$prediction <- renderText({
+      paste("Prediction: ", prediction)
+    })
+  })
+}
+
+
+shinyApp(ui = ui, server = server)
+```
