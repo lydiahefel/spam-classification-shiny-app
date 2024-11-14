@@ -11,6 +11,14 @@ library(shiny)
 library(bslib)
 library(here)
 library(dplyr)
+library(plotly)
+library(bayesrules)
+library(tidyverse)
+library(e1071)
+library(janitor)
+library(tm)
+library(wordcloud)
+library(tidytext)
 ```
 
 ## Data
@@ -18,7 +26,14 @@ library(dplyr)
 ```{r}
 spam_data <- read.table(file= here("data/sms+spam+collection/SMSSpamCollection"), sep="\t", quote="", comment.char="")
 
-colnames(spam_data)[c(1,2)] <- c("spam", "message")
+colnames(spam_data)[c(1,2)] <- c("type", "message")
+```
+
+#### EDA
+
+```{r}
+ggplot(spam_data, aes(x = type, fill = type)) +
+  geom_bar()
 ```
 
 ## Shiny App Example
@@ -69,4 +84,22 @@ server <- function(input, output) {
 
 shinyApp(ui = ui, server = server)
 
+```
+
+#### Word Counts
+
+```{r, message = FALSE}
+words <- spam_data %>%
+  unnest_tokens(word, message) %>%
+  anti_join(stop_words)
+
+word_count <- words %>%
+  group_by(type, word) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count))
+```
+
+```{r}
+ggplot(head(word_count, n = 35), aes(x = count, y = word, fill = type)) +
+  geom_col()
 ```
