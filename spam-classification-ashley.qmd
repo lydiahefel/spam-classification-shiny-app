@@ -165,7 +165,21 @@ top_10
 ```
 
 ```{r}
+# Assuming 'top_10' is a list of the top 10 words as created previously
+top_10_words <- unlist(top_10)  # Convert list to vector for pattern matching
 
+# Create a new column 'contains_top_10' in 'data'
+data$contains_top_10 <- sapply(data$message, function(msg) {
+  # Check if any of the top 10 words are in the message
+  if (any(sapply(top_10_words, function(word) grepl(word, msg, ignore.case = TRUE)))) {
+    "yes"
+  } else {
+    "no"
+  }
+})
+
+# Display the first few rows of data to verify
+head(data)
 ```
 
 ## Bayes
