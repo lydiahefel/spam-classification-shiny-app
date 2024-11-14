@@ -1,0 +1,105 @@
+---
+title: "spam-classification-lydia"
+format: html
+editor: visual
+---
+
+## Libraries
+
+```{r, message = FALSE}
+library(shiny)
+library(bslib)
+library(here)
+library(dplyr)
+library(plotly)
+library(bayesrules)
+library(tidyverse)
+library(e1071)
+library(janitor)
+library(tm)
+library(wordcloud)
+library(tidytext)
+```
+
+## Data
+
+```{r}
+spam_data <- read.table(file= here("data/sms+spam+collection/SMSSpamCollection"), sep="\t", quote="", comment.char="")
+
+colnames(spam_data)[c(1,2)] <- c("type", "message")
+```
+
+#### EDA
+
+```{r}
+ggplot(spam_data, aes(x = type, fill = type)) +
+  geom_bar()
+```
+
+## Shiny App Example
+
+```{r, message = FALSE}
+# Define UI for app that draws a histogram ----
+ui <- page_sidebar(
+  # App title ----
+  title = "Hello Shiny!",
+  # Sidebar panel for inputs ----
+  sidebar = sidebar(
+    # Input: Slider for the number of bins ----
+    sliderInput(
+      inputId = "bins",
+      label = "Number of bins:",
+      min = 1,
+      max = 50,
+      value = 30
+    )
+  ),
+  # Output: Histogram ----
+  plotOutput(outputId = "distPlot")
+)
+
+# Define server logic required to draw a histogram ----
+server <- function(input, output) {
+
+  # Histogram of the Old Faithful Geyser Data ----
+  # with requested number of bins
+  # This expression that generates a histogram is wrapped in a call
+  # to renderPlot to indicate that:
+  #
+  # 1. It is "reactive" and therefore should be automatically
+  #    re-executed when inputs (input$bins) change
+  # 2. Its output type is a plot
+  output$distPlot <- renderPlot({
+
+    x    <- faithful$waiting
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+
+    hist(x, breaks = bins, col = "#007bc2", border = "white",
+         xlab = "Waiting time to next eruption (in mins)",
+         main = "Histogram of waiting times")
+
+    })
+
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+#### Word Counts
+
+```{r, message = FALSE}
+words <- spam_data %>%
+  unnest_tokens(word, message) %>%
+  anti_join(stop_words)
+
+word_count <- words %>%
+  group_by(type, word) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count))
+```
+
+```{r}
+ggplot(head(word_count, n = 35), aes(x = count, y = word, fill = type)) +
+  geom_col()
+```

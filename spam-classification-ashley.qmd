@@ -1,0 +1,189 @@
+---
+title: "Spam Classification Ashley"
+format: html
+editor: visual
+---
+
+## Libraries
+
+```{r, message = FALSE}
+library(bayesrules)
+library(tidyverse)
+library(e1071)
+library(janitor)
+library(shiny)
+library(bslib)
+library(here)
+library(tm)
+library(wordcloud)
+```
+
+## Data
+
+```{r}
+data <- read.table(file= here("~/Desktop/Bayesian Stats/spam-classification-shiny-app/SMSSpamCollection"), sep="\t", quote="", comment.char="")
+```
+
+## Cleaning
+
+```{r}
+head(data)
+```
+
+```{r}
+colnames(data)
+```
+
+```{r}
+colnames(data) <- c("type", "message")
+colnames(data)
+```
+
+```{r}
+head(data)
+```
+
+## Exploration
+
+```{r}
+ggplot(data = data, aes(x = type, fill = type)) + 
+  geom_bar()
+```
+
+```{r}
+count_exclamations <- sum(grepl("!", data$message))
+count_exclamations
+```
+
+```{r}
+data$has_exclamation <- ifelse(grepl("!", data$message), "yes", "no")
+```
+
+```{r}
+ggplot(data, aes(x = type, fill = has_exclamation)) + 
+  geom_bar()
+```
+
+Ham Word Cloud
+
+```{r, warning=FALSE}
+# Subset the data for 'ham' messages
+ham_messages <- subset(data, type == "ham")$message
+
+# Create a text corpus for 'ham' messages
+ham_corpus <- Corpus(VectorSource(ham_messages))
+
+# Clean the text: remove punctuation, stopwords, and convert to lowercase
+ham_corpus <- tm_map(ham_corpus, content_transformer(tolower))
+ham_corpus <- tm_map(ham_corpus, removePunctuation)
+ham_corpus <- tm_map(ham_corpus, removeWords, stopwords("english"))
+ham_corpus <- tm_map(ham_corpus, stripWhitespace)
+
+# Create word cloud for 'ham' messages
+wordcloud(ham_corpus, max.words = 120, random.order = FALSE, colors = brewer.pal(8, "Dark2"), main = "Ham Messages")
+```
+
+Spam Word Cloud
+
+```{r, warning=FALSE}
+# Subset the data for 'spam' messages
+spam_messages <- subset(data, type == "spam")$message
+
+# Create a text corpus for 'spam' messages
+spam_corpus <- Corpus(VectorSource(spam_messages))
+
+# Clean the text: remove punctuation, stopwords, and convert to lowercase
+spam_corpus <- tm_map(spam_corpus, content_transformer(tolower))
+spam_corpus <- tm_map(spam_corpus, removePunctuation)
+spam_corpus <- tm_map(spam_corpus, removeWords, stopwords("english"))
+spam_corpus <- tm_map(spam_corpus, stripWhitespace)
+
+# Create word cloud for 'spam' messages with standard Reds palette
+wordcloud(spam_corpus, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Reds"), main = "Spam Messages")
+```
+
+```{r}
+# Add a new column 'word_count' to 'data' with the word count of each message
+data$word_count <- sapply(strsplit(data$message, "\\s+"), length)
+```
+
+```{r}
+ggplot(data, aes(x = type, y = word_count, color = has_exclamation)) + 
+  geom_point()
+```
+
+It can be seen in this graph that spam messages are always less than 50 words in this data set. Also, a larger portion of spam has an exclamation point while the ham messages rarely do.
+
+```{r}
+# Count the number of spam messages with word_count less than 50
+spam_count_greater_than_50 <- sum(data$type == "spam" & data$word_count > 50)
+spam_count_greater_than_50
+```
+
+```{r}
+# Next, run positive vs negative sentiment analysis
+# Done by Lydia 
+```
+
+```{r, warning=FALSE}
+# Load necessary libraries
+library(tm)
+
+# Subset the data for 'spam' messages
+spam_messages <- subset(data, type == "spam")$message
+
+# Create a text corpus for 'spam' messages
+spam_corpus <- Corpus(VectorSource(spam_messages))
+
+# Clean the text: remove punctuation, stopwords, and convert to lowercase
+spam_corpus <- tm_map(spam_corpus, content_transformer(tolower))
+spam_corpus <- tm_map(spam_corpus, removePunctuation)
+spam_corpus <- tm_map(spam_corpus, removeWords, stopwords("english"))
+spam_corpus <- tm_map(spam_corpus, stripWhitespace)
+
+# Create a term-document matrix
+tdm <- TermDocumentMatrix(spam_corpus)
+
+# Convert term-document matrix to a matrix and get word frequencies
+tdm_matrix <- as.matrix(tdm)
+word_freqs <- rowSums(tdm_matrix)
+
+# Sort word frequencies in decreasing order and get the top 10 words
+top_10_words <- sort(word_freqs, decreasing = TRUE)[1:10]
+
+# Convert to a data frame for readability
+top_10_words_df <- data.frame(word = names(top_10_words), frequency = top_10_words, row.names = NULL)
+
+# Display the list of top 10 words
+top_10_words_df
+
+```
+
+```{r}
+top_10 <- as.list(top_10_words_df$word)
+top_10
+```
+
+```{r}
+# Assuming 'top_10' is a list of the top 10 words as created previously
+top_10_words <- unlist(top_10)  # Convert list to vector for pattern matching
+
+# Create a new column 'contains_top_10' in 'data'
+data$contains_top_10 <- sapply(data$message, function(msg) {
+  # Check if any of the top 10 words are in the message
+  if (any(sapply(top_10_words, function(word) grepl(word, msg, ignore.case = TRUE)))) {
+    "yes"
+  } else {
+    "no"
+  }
+})
+
+# Display the first few rows of data to verify
+head(data)
+```
+
+## Bayes
+
+```{r}
+
+```
