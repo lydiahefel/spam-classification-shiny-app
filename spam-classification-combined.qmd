@@ -1,0 +1,96 @@
+---
+title: "spam-classification-combined"
+format: html
+editor: visual
+---
+
+```{r, message = FALSE}
+library(shiny)
+library(bslib)
+library(here)
+library(dplyr)
+library(plotly)
+library(bayesrules)
+library(tidyverse)
+library(e1071)
+library(janitor)
+library(tm)
+library(wordcloud)
+library(tidytext)
+```
+
+## Data
+
+you will have to change the filepath to your
+
+```{r}
+spam_data <- read.table(file= here("~/R/DS400/finalproj/SMSSpamCollection.txt"), sep="\t", quote="", comment.char="")
+
+colnames(spam_data)[c(1,2)] <- c("type", "message")
+```
+
+#### EDA
+
+```{r}
+ggplot(spam_data, aes(x = type, fill = type)) +
+  geom_bar()
+```
+
+#### Word Counts
+
+```{r, message = FALSE}
+words <- spam_data %>%
+  unnest_tokens(word, message) %>%
+  anti_join(stop_words)
+
+word_count <- words %>%
+  group_by(type, word) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count))
+```
+
+```{r}
+ggplot(head(word_count, n = 35), aes(x = count, y = word, fill = type)) +
+  geom_col()
+```
+
+```{r}
+ui <- fluidPage(
+  titlePanel("Spam Classification Model"),
+  
+  # Sidebar layout
+  sidebarLayout(
+    sidebarPanel(
+      # allow for text input
+      textInput("text", "Enter SMS text:"),
+      
+      # add an action button
+      actionButton("classify", "Classify")
+    ),
+    
+    # the main section of the app
+    mainPanel(
+      # output
+      textOutput("prediction")
+    )
+  )
+)
+
+
+#server
+server <- function(input, output) {
+  observeEvent(input$classify, {
+    #prediction
+    new_data <- data.frame(text = input$text)
+    prediction <- predict(model, new_data)
+    
+    # Output
+    output$prediction <- renderText({
+      paste("Prediction: ", prediction)
+    })
+  })
+}
+
+
+shinyApp(ui = ui, server = server)
+```
