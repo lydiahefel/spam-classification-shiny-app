@@ -185,5 +185,21 @@ head(data)
 ## Bayes
 
 ```{r}
+# Fake news example from class 
+# naive_model_hints <- naiveBayes(type ~ title_words + negative + title_has_excl, data = fake_news)
 
+# our_article <- data.frame(title_words = 15, negative = 6, title_has_excl = "FALSE")
+
+# predict(naive_model_hints, newdata = our_article, type = "raw")
+
+# fake_news <- fake_news %>% 
+  #mutate(predicted_article = predict(naive_model_hints, newdata = .))
+
+# fake_news %>% 
+  #tabyl(type, predicted_article) %>% 
+  #adorn_percentages("row") %>% 
+  #adorn_pct_formatting(digits = 2) %>%
+  #adorn_ns
+
+# naive_model_hints
 ```
