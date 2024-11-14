@@ -122,6 +122,49 @@ spam_count_greater_than_50
 
 ```{r}
 # Next, run positive vs negative sentiment analysis
+# Done by Lydia 
+```
+
+```{r, warning=FALSE}
+# Load necessary libraries
+library(tm)
+
+# Subset the data for 'spam' messages
+spam_messages <- subset(data, type == "spam")$message
+
+# Create a text corpus for 'spam' messages
+spam_corpus <- Corpus(VectorSource(spam_messages))
+
+# Clean the text: remove punctuation, stopwords, and convert to lowercase
+spam_corpus <- tm_map(spam_corpus, content_transformer(tolower))
+spam_corpus <- tm_map(spam_corpus, removePunctuation)
+spam_corpus <- tm_map(spam_corpus, removeWords, stopwords("english"))
+spam_corpus <- tm_map(spam_corpus, stripWhitespace)
+
+# Create a term-document matrix
+tdm <- TermDocumentMatrix(spam_corpus)
+
+# Convert term-document matrix to a matrix and get word frequencies
+tdm_matrix <- as.matrix(tdm)
+word_freqs <- rowSums(tdm_matrix)
+
+# Sort word frequencies in decreasing order and get the top 10 words
+top_10_words <- sort(word_freqs, decreasing = TRUE)[1:10]
+
+# Convert to a data frame for readability
+top_10_words_df <- data.frame(word = names(top_10_words), frequency = top_10_words, row.names = NULL)
+
+# Display the list of top 10 words
+top_10_words_df
+
+```
+
+```{r}
+top_10 <- as.list(top_10_words_df$word)
+top_10
+```
+
+```{r}
 
 ```
 
