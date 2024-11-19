@@ -7,15 +7,18 @@ editor: visual
 ## Libraries
 
 ```{r, message = FALSE}
+library(shiny)
+library(bslib)
+library(here)
+library(dplyr)
+library(plotly)
 library(bayesrules)
 library(tidyverse)
 library(e1071)
 library(janitor)
-library(shiny)
-library(bslib)
-library(here)
 library(tm)
 library(wordcloud)
+library(tidytext)
 ```
 
 ## Data
@@ -202,4 +205,101 @@ head(data)
   #adorn_ns
 
 # naive_model_hints
+```
+
+```{r}
+spam_data <- 
+  read.table(file = here("~/Desktop/Bayesian Stats/spam-classification-shiny-app/SMSSpamCollection"), sep="\t", quote="", comment.char="") %>%
+  mutate(id = row_number()) %>% 
+  select(id, everything())
+
+colnames(spam_data)[c(2,3)] <- c("type", "message")
+```
+
+```{r}
+#adding sentiment analysis by message
+
+sentiment_by_message <- spam_data %>%
+  unnest_tokens(word, message) %>%
+  inner_join(get_sentiments("bing"), by = "word") %>%
+  count(id, sentiment)
+
+sentiment_by_message <- sentiment_by_message %>%
+  spread(key = sentiment, value = n, fill = 0) %>%
+  mutate(sentiment_score = positive - negative) %>%
+  select(id, sentiment_score)
+
+sentiment_by_message <- sentiment_by_message %>%
+  mutate(sentiment = case_when(
+    sentiment_score > 0 ~ "positive",
+    sentiment_score < 0 ~ "negative",
+    TRUE ~ "neutral"))
+```
+
+```{r}
+spam_data <- spam_data %>% 
+  left_join(sentiment_by_message, by = "id")
+```
+
+```{r}
+spam_data
+```
+
+```{r}
+spam_data <- spam_data %>% select(-sentiment_score)
+```
+
+```{r}
+spam_data
+```
+
+```{r}
+data <- cbind(data, spam_data)
+```
+
+```{r}
+data
+```
+
+```{r}
+# Drop columns 7 and 8 from 'data' using base R
+data <- data[, -c(7, 8)]
+```
+
+```{r}
+data
+```
+
+```{r}
+data <- data %>%
+  select(id, everything())
+```
+
+```{r}
+data
+```
+
+Bayes
+
+```{r}
+naive_model_hints <- naiveBayes(type ~ has_exclamation + word_count + contains_top_10 + sentiment, data = data)
+
+our_message <- data.frame(has_exclamation = 'yes', word_count = 15, contains_top_10 = 'no', sentiment = 'negative')
+
+predict(naive_model_hints, newdata = our_message, type = "raw")
+
+data <- data %>% 
+mutate(predicted_type = predict(naive_model_hints, newdata = .))
+
+data %>% 
+  tabyl(type, predicted_type) %>% 
+  adorn_percentages("row") %>% 
+  adorn_pct_formatting(digits = 2) %>%
+  adorn_ns
+
+naive_model_hints
+```
+
+```{r}
+
 ```
