@@ -1,0 +1,86 @@
+---
+title: "SMSSpamCollection"
+author: "Landon Vitug"
+date: "2024-11-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(shiny)
+library(bslib)
+library(shiny)
+library(bslib)
+library(here)
+library(dplyr)
+library(plotly)
+library(bayesrules)
+library(tidyverse)
+library(e1071)
+library(janitor)
+library(tm)
+library(tidytext)
+
+spam_data <- read_csv("/Users/land_onv/DS_400/SMSSpamCollection")
+
+```
+
+
+```{r, message=FALSE}
+# Define UI
+ui <- fluidPage(
+  titlePanel("Spam Detector"),
+  sidebarLayout(
+    sidebarPanel(
+      textInput("message", "Enter a message:", ""),
+      actionButton("predict", "Predict")
+    ),
+    mainPanel(
+      textOutput("result")
+    )
+  )
+)
+
+server <- function(input, output) {
+  observeEvent(input$predict, {
+    # Process user input message
+    input_message <- data.frame(text = input$message)
+    input_corpus <- VCorpus(VectorSource(input_message$text))
+    input_corpus <- tm_map(input_corpus, content_transformer(tolower))
+    input_corpus <- tm_map(input_corpus, removePunctuation)
+    input_corpus <- tm_map(input_corpus, removeWords, stopwords("en"))
+    input_corpus <- tm_map(input_corpus, stripWhitespace)
+    
+    # Create DTM with the same dictionary as the training DTM
+    input_dtm <- DocumentTermMatrix(input_corpus, control = list(dictionary = Terms(dtm)))
+    input_dtm <- as.data.frame(as.matrix(input_dtm))
+    
+    # Add missing columns as zeros
+    missing_cols <- setdiff(names(dtm)[-ncol(dtm)], names(input_dtm))
+    input_dtm[missing_cols] <- 0
+    
+    # Reorder columns to match the training DTM
+    input_dtm <- input_dtm[, names(dtm)[-ncol(dtm)], drop = FALSE]
+    
+    # Predict using the model
+    prediction <- predict(model, input_dtm)
+    
+    # Display the result
+    output$result <- renderText({
+      paste("This message is classified as:", ifelse(prediction == "spam", "Spam", "Ham"))
+    })
+  })
+}
+
+```
+
+```{r, message=FALSE}
+# Run the application
+shinyApp(ui = ui, server = server)
+
+
+```
