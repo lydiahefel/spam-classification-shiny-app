@@ -1,4 +1,4 @@
-# SMS Spam Message Naive Bayes Classification Shiny App
+# SMS Spam Message Naive Bayes Classification Shiny App 📩
 
 ![image](https://github.com/user-attachments/assets/9e71d778-bff4-46e7-bd90-4c6ebccd396c) ![image](https://github.com/user-attachments/assets/e937eb63-d60a-45eb-81b2-c91afa01bde3)
 
