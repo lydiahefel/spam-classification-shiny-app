@@ -12,20 +12,32 @@ For our project, we used RStudio. We uploaded the the dataset, cleaned the data,
 4) sentiment of the message (positive, negative, or neutral)
 
 The confusion matrix output of our model: 
+
  type            ham         spam
+ 
  ham 95.59% (4,614)  4.41% (213)
+ 
  spam 25.30%   (189) 74.70% (558)
+ 
 
  Thus, our model correctly predicts spam messages at a 74.70% rate. 
+ 
 
- ![image](https://github.com/user-attachments/assets/fdc27659-39a0-4577-a7b1-2ef91391df2f)
+  ![image](https://github.com/user-attachments/assets/2312574b-82b0-4a4b-b2c1-6d7488c12db5)
+
 
  Group Members: 
+ 
 [Lydia Hefel](https://github.com/lydiahefel)
+
 [Ashley Holen](https://github.com/ashleyholen)
+
 [Bennet Bush](https://github.com/0xw1nn13)
+
 [Landon Vitug](https://github.com/landonv808)
+
 [Kamryn Lopez](https://github.com/kamrynlopez)
+
 
 
 
