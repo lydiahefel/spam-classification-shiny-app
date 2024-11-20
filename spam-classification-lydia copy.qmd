@@ -1,0 +1,191 @@
+---
+title: "spam-classification-lydia"
+format: html
+editor: visual
+---
+
+## Libraries
+
+```{r, message = FALSE}
+library(shiny)
+library(bslib)
+library(here)
+library(dplyr)
+library(plotly)
+library(ggplot2)
+library(bayesrules)
+library(tidyverse)
+library(e1071)
+library(janitor)
+library(tm)
+library(wordcloud)
+library(tidytext)
+library(scales)
+```
+
+## Data
+
+```{r}
+spam_data <- 
+  read.table(file = here("data/sms+spam+collection/SMSSpamCollection"), sep="\t", quote="", comment.char="") %>%
+  mutate(id = row_number()) %>% 
+  select(id, everything())
+
+colnames(spam_data)[c(2,3)] <- c("type", "message")
+```
+
+## EDA
+
+```{r}
+ggplot(spam_data, aes(x = type, fill = type)) +
+  geom_bar()
+```
+
+## Shiny App Example
+
+```{r, message = FALSE}
+# Define UI for app that draws a histogram ----
+ui <- page_sidebar(
+  # App title ----
+  title = "Hello Shiny!",
+  # Sidebar panel for inputs ----
+  sidebar = sidebar(
+    # Input: Slider for the number of bins ----
+    sliderInput(
+      inputId = "bins",
+      label = "Number of bins:",
+      min = 1,
+      max = 50,
+      value = 30
+    )
+  ),
+  # Output: Histogram ----
+  plotOutput(outputId = "distPlot")
+)
+
+# Define server logic required to draw a histogram ----
+server <- function(input, output) {
+
+  # Histogram of the Old Faithful Geyser Data ----
+  # with requested number of bins
+  # This expression that generates a histogram is wrapped in a call
+  # to renderPlot to indicate that:
+  #
+  # 1. It is "reactive" and therefore should be automatically
+  #    re-executed when inputs (input$bins) change
+  # 2. Its output type is a plot
+  output$distPlot <- renderPlot({
+
+    x    <- faithful$waiting
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+
+    hist(x, breaks = bins, col = "#007bc2", border = "white",
+         xlab = "Waiting time to next eruption (in mins)",
+         main = "Histogram of waiting times")
+
+    })
+
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+## Preparing Data for Model
+
+#### has exclamation
+
+```{r}
+count_exclamations <- sum(grepl("!", spam_data$message))
+
+spam_data$has_exclamation <- ifelse(grepl("!", spam_data$message), "yes", "no")
+```
+
+#### message word count
+
+```{r}
+spam_data$word_count <- sapply(strsplit(spam_data$message, "\\s+"), length)
+```
+
+#### sentiment analysis - positive vs negative
+
+##### by message
+
+```{r}
+sentiment_by_message <- spam_data %>%
+  unnest_tokens(word, message) %>%
+  inner_join(get_sentiments("bing"), by = "word") %>%
+  count(id, sentiment)
+
+sentiment_by_message <- sentiment_by_message %>%
+  spread(key = sentiment, value = n, fill = 0) %>%
+  mutate(sentiment_score = positive - negative) %>%
+  select(id, sentiment_score)
+
+sentiment_by_message <- sentiment_by_message %>%
+  mutate(sentiment_class = case_when(
+    sentiment_score > 0 ~ "positive",
+    sentiment_score < 0 ~ "negative",
+    TRUE ~ "neutral"))
+
+
+spam_data <- spam_data %>% 
+  left_join(sentiment_by_message, by = "id")
+```
+
+##### by type
+
+```{r}
+sentiment_by_type <- spam_data %>%
+  unnest_tokens(word, message) %>%
+  inner_join(get_sentiments("bing"), by = "word") %>%
+  count(type, sentiment)
+```
+
+## Data Visualizations
+
+### word occurrences - spam vs ham
+
+```{r, message = FALSE}
+words <- spam_data %>%
+  unnest_tokens(word, message) %>%
+  anti_join(stop_words)
+
+words <- words %>%
+  group_by(type, word) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count))
+
+ggplot(head(words, n = 35), aes(x = count, y = word, fill = type)) +
+  geom_col()
+```
+
+### sentiment analysis by type
+
+```{r}
+# sentiment_by_type <- spam_data %>%
+#   unnest_tokens(word, message) %>%
+#   inner_join(get_sentiments("bing"), by = "word") %>%
+#   count(type, sentiment)
+
+ggplot(sentiment_by_type, aes(x = type, y = n, fill = sentiment)) +
+  geom_col()
+
+```
+
+### sentiment analysis by word
+
+```{r}
+sentiment_by_word <- words %>%
+   unnest_tokens(word, word) %>%
+   inner_join(get_sentiments("bing"), by = "word") %>%
+   count(head(words, n = 843), sentiment)
+
+ggplot(head(sentiment_by_word, n = 35), aes(x = count, y = word, fill = sentiment)) +
+  geom_col() +
+  facet_wrap(~type)
+
+ggplot(tail(sentiment_by_word, n = 35), aes(x = count, y = word, fill = sentiment)) +
+  geom_col() +
+  facet_wrap(~type)
+```
