@@ -24,7 +24,8 @@ library(tidytext)
 you will have to change the filepath to your
 
 ```{r}
-data <- read.table(file= here("~/R/DS400/finalproj/SMSSpamCollection.txt"), sep="\t", quote="", comment.char="")
+data <- 
+  read.table(file = here("SMSSpamCollection"), sep="\t", quote="", comment.char="") 
 ```
 
 ## Cleaning
@@ -58,11 +59,14 @@ count_exclamations <- sum(grepl("!", data$message))
 count_exclamations
 ```
 
+### Variable 1: Message has exclamation (yes or no)
+
 ```{r}
 data$has_exclamation <- ifelse(grepl("!", data$message), "yes", "no")
 ```
 
 ```{r}
+#Variable 1: Has Exclamation (yes or no)
 ggplot(data, aes(x = type, fill = has_exclamation)) + 
   geom_bar()
 ```
@@ -105,7 +109,11 @@ spam_corpus <- tm_map(spam_corpus, stripWhitespace)
 wordcloud(spam_corpus, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Reds"), main = "Spam Messages")
 ```
 
+### Variable 2: Word count of message 
+
 ```{r}
+#Variable 2: How many words the message has 
+
 # Add a new column 'word_count' to 'data' with the word count of each message
 data$word_count <- sapply(strsplit(data$message, "\\s+"), length)
 ```
@@ -123,9 +131,20 @@ spam_count_greater_than_50 <- sum(data$type == "spam" & data$word_count > 50)
 spam_count_greater_than_50
 ```
 
+```{r, message = FALSE}
+words <- data %>%
+  unnest_tokens(word, message) %>%
+  anti_join(stop_words)
+
+word_count <- words %>%
+  group_by(type, word) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count))
+```
+
 ```{r}
-# Next, run positive vs negative sentiment analysis
-# Done by Lydia 
+ggplot(head(word_count, n = 35), aes(x = count, y = word, fill = type)) +
+  geom_col()
 ```
 
 ```{r, warning=FALSE}
@@ -167,7 +186,11 @@ top_10 <- as.list(top_10_words_df$word)
 top_10
 ```
 
+### Variable 3: Contains any of the top 10 words contained in spam
+
 ```{r}
+#Variable 3: Contains any of the top 10 words contained in a spam message
+
 # Assuming 'top_10' is a list of the top 10 words as created previously
 top_10_words <- unlist(top_10)  # Convert list to vector for pattern matching
 
@@ -185,15 +208,104 @@ data$contains_top_10 <- sapply(data$message, function(msg) {
 head(data)
 ```
 
-## Bayes
+### Variable 4: Sentiment of the message
 
 ```{r}
+#Variable 4: Sentiment of the message (positive or negative)
 
+spam_data <- 
+  read.table(file = here("SMSSpamCollection"), sep="\t", quote="", comment.char="") %>%
+  mutate(id = row_number()) %>% 
+  select(id, everything())
+
+colnames(spam_data)[c(2,3)] <- c("type", "message")
+```
+
+```{r}
+#adding sentiment analysis by message
+
+sentiment_by_message <- spam_data %>%
+  unnest_tokens(word, message) %>%
+  inner_join(get_sentiments("bing"), by = "word") %>%
+  count(id, sentiment)
+
+sentiment_by_message <- sentiment_by_message %>%
+  spread(key = sentiment, value = n, fill = 0) %>%
+  mutate(sentiment_score = positive - negative) %>%
+  select(id, sentiment_score)
+
+sentiment_by_message <- sentiment_by_message %>%
+  mutate(sentiment = case_when(
+    sentiment_score > 0 ~ "positive",
+    sentiment_score < 0 ~ "negative",
+    TRUE ~ "neutral"))
+```
+
+```{r}
+spam_data <- spam_data %>% 
+  left_join(sentiment_by_message, by = "id")
+```
+
+```{r}
+spam_data
+```
+
+```{r}
+spam_data <- spam_data %>% select(-sentiment_score)
+```
+
+```{r}
+spam_data
+```
+
+```{r}
+data <- cbind(data, spam_data)
+data
+```
+
+```{r}
+# Drop columns 7 and 8 from 'data' using base R
+data <- data[, -c(7, 8)]
+```
+
+```{r}
+data
+```
+
+```{r}
+data <- data %>%
+  select(id, everything())
+data
+```
+
+## Naive Bayes Model 
+
+Predicting message type based on the 4 variables
+
+```{r}
+naive_model_hints <- naiveBayes(type ~ has_exclamation + word_count + contains_top_10 + sentiment, data = data)
+
+our_message <- data.frame(has_exclamation = 'yes', word_count = 15, contains_top_10 = 'no', sentiment = 'negative')
+
+predict(naive_model_hints, newdata = our_message, type = "raw")
+
+data <- data %>% 
+mutate(predicted_type = predict(naive_model_hints, newdata = .))
+
+data %>% 
+  tabyl(type, predicted_type) %>% 
+  adorn_percentages("row") %>% 
+  adorn_pct_formatting(digits = 2) %>%
+  adorn_ns
+
+naive_model_hints
 ```
 
 ### Shiny app
 
 ```{r}
+## Setting up the format of the app
+
 ui <- fluidPage(
   titlePanel("Spam Classification Model"),
   
@@ -214,14 +326,20 @@ ui <- fluidPage(
     )
   )
 )
+```
 
+```{r}
+## creating the engine for the server
 
-#server
 server <- function(input, output) {
   observeEvent(input$classify, {
     #prediction
-    new_data <- data.frame(text = input$text)
-    prediction <- predict(model, new_data)
+    our_prediction <- data.frame(text = input$text)
+    our_prediction$word_count <- sapply(strsplit(as.character(our_prediction$text), "\\s+"), length)
+    our_prediction$count_exclamations <- sum(grepl("!", our_prediction$text))
+    our_prediction$has_exclamation <- ifelse(grepl("!", our_prediction$text), "yes", "no")
+
+    prediction <- predict(naive_model_hints, our_prediction)
     
     # Output
     output$prediction <- renderText({
@@ -229,7 +347,10 @@ server <- function(input, output) {
     })
   })
 }
+```
 
+```{r}
+## running the app
 
 shinyApp(ui = ui, server = server)
 ```
