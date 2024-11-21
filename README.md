@@ -34,7 +34,7 @@ The confusion matrix output of our model:
 
 [Ashley Holen](https://github.com/ashleyholen)
 
-[Bennet Bush](https://github.com/0xw1nn13)
+[Bennett Bush](https://github.com/0xw1nn13)
 
 [Landon Vitug](https://github.com/landonv808)
 
