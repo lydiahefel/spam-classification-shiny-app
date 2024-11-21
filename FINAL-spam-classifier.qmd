@@ -21,8 +21,6 @@ library(tidytext)
 
 ## Data
 
-you will have to change the filepath to your
-
 ```{r}
 data <- 
   read.table(file = here("SMSSpamCollection"), sep="\t", quote="", comment.char="") 
@@ -109,7 +107,7 @@ spam_corpus <- tm_map(spam_corpus, stripWhitespace)
 wordcloud(spam_corpus, max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Reds"), main = "Spam Messages")
 ```
 
-### Variable 2: Word count of message 
+### Variable 2: Word count of message
 
 ```{r}
 #Variable 2: How many words the message has 
@@ -214,7 +212,7 @@ head(data)
 #Variable 4: Sentiment of the message (positive or negative)
 
 spam_data <- 
-  read.table(file = here("SMSSpamCollection"), sep="\t", quote="", comment.char="") %>%
+  read.table(file = here("~/R/DS400/finalproj/SMSSpamCollection"), sep="\t", quote="", comment.char="") %>%
   mutate(id = row_number()) %>% 
   select(id, everything())
 
@@ -278,7 +276,7 @@ data <- data %>%
 data
 ```
 
-## Naive Bayes Model 
+## Naive Bayes Model
 
 Predicting message type based on the 4 variables
 
@@ -299,58 +297,4 @@ data %>%
   adorn_ns
 
 naive_model_hints
-```
-
-### Shiny app
-
-```{r}
-## Setting up the format of the app
-
-ui <- fluidPage(
-  titlePanel("Spam Classification Model"),
-  
-  # Sidebar layout
-  sidebarLayout(
-    sidebarPanel(
-      # allow for text input
-      textInput("text", "Enter SMS text:"),
-      
-      # add an action button
-      actionButton("classify", "Classify")
-    ),
-    
-    # the main section of the app
-    mainPanel(
-      # output
-      textOutput("prediction")
-    )
-  )
-)
-```
-
-```{r}
-## creating the engine for the server
-
-server <- function(input, output) {
-  observeEvent(input$classify, {
-    #prediction
-    our_prediction <- data.frame(text = input$text)
-    our_prediction$word_count <- sapply(strsplit(as.character(our_prediction$text), "\\s+"), length)
-    our_prediction$count_exclamations <- sum(grepl("!", our_prediction$text))
-    our_prediction$has_exclamation <- ifelse(grepl("!", our_prediction$text), "yes", "no")
-
-    prediction <- predict(naive_model_hints, our_prediction)
-    
-    # Output
-    output$prediction <- renderText({
-      paste("Prediction: ", prediction)
-    })
-  })
-}
-```
-
-```{r}
-## running the app
-
-shinyApp(ui = ui, server = server)
 ```
